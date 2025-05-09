@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { generateGroupPhase, generateKnockoutBracket, getLastMatchOf } from "@/helpers";
+import { getLastMatchOf } from "@/helpers";
+import { generateGroupPhase } from "@/helpers/matchplan/groupPhase";
+import { generateKnockoutBracket } from "@/helpers/matchplan/knockoutPhase";
 import type { Tournament } from "@/types/tournament";
-import { computed, ref, watch, onMounted } from "vue";
+import { computed, onMounted } from "vue";
 
 const props = defineProps<{
     modelValue: Tournament;
@@ -10,40 +12,28 @@ const emit = defineEmits<{
     (e: "update:modelValue", value: Tournament): void;
 }>();
 
-const tournament = ref(props.modelValue);
-
-watch(
-    () => props.modelValue,
-    (newValue) => {
-        tournament.value = newValue;
+const tournament = computed({
+    get() {
+        return props.modelValue;
     },
-    { deep: true },
-);
-watch(
-    tournament,
-    (newValue) => {
-        emit("update:modelValue", newValue);
+    set(value) {
+        emit("update:modelValue", value);
     },
-    { deep: true },
-);
+});
 
 const generate = () => {
     if (tournament.value.teams.length === 0) return;
 
-    tournament.value.groupPhase = generateGroupPhase(
-        tournament.value.teams,
-        tournament.value.config,
-    );
-    tournament.value.knockoutPhase = generateKnockoutBracket(
-        tournament.value.config,
-        getLastMatchOf(tournament.value.groupPhase).date,
-    );
+    tournament.value.groupPhase = generateGroupPhase(tournament.value);
+    tournament.value.knockoutPhase = generateKnockoutBracket(tournament.value);
 };
 
 onMounted(generate);
 
 const tournamentEndsAt = computed(() => {
-    const lastMatch = getLastMatchOf(tournament.value.knockoutPhase);
+    const lastMatch = getLastMatchOf({
+        rounds: tournament.value.knockoutPhase,
+    });
     if (!lastMatch) return null;
     const endTime = new Date(lastMatch.date);
     endTime.setMinutes(endTime.getMinutes() + tournament.value.config.matchDuration);
@@ -51,9 +41,11 @@ const tournamentEndsAt = computed(() => {
 });
 
 const totalMatchCount = computed(() => {
-    return tournament.value.groupPhase.reduce((acc, round) => {
-        return acc + round.matches.length;
-    }, 0);
+    return (
+        tournament.value.knockoutPhase.reduce((acc, round) => {
+            return acc + round.matches.length;
+        }, 0) + tournament.value.groupPhase.length
+    );
 });
 
 const totalTournamentDurationFormatted = computed(() => {

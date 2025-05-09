@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import type { Tournament } from "@/types/tournament";
+import { useTournamentsStore } from "@/stores/tournaments";
 import TournamentMatches from "@/components/TournamentMatches.vue";
-import { ref } from "vue";
 
 const props = defineProps<{
     tournament: Tournament;
 }>();
-const tournament = ref(props.tournament);
+
+const tournamentStore = useTournamentsStore();
+const tournament = tournamentStore.getTournamentById(props.tournament.id)!;
 </script>
 
 <template>
-    <TournamentMatches
-        v-model="tournament"
-        readonly
-    />
+    <TournamentMatches v-model="tournament" />
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { type TeamScore, type Tournament } from "../types/tournament";
-import { calculateDifference, calculateTeamPoints } from "../helpers";
+import { calculateDifference, calculateTeamPoints } from "@/helpers/scoring";
+import { type TeamScore, type Tournament } from "@/types/tournament";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -20,7 +20,6 @@ const teamName = computed(() => {
     <router-link
         :to="{
             name: teamMatchesRouteName,
-            params: { tournamentId: tournament.id },
             query: { team: score.team.id },
         }"
         class="team"
